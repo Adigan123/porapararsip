@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Website Pengarsipan</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .arsip-table th, .arsip-table td {
+            vertical-align: middle;
+        }
+        .logo-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .logo-header img {
+            height: 40px;
+        }
+        .logo-text {
+            font-size: 1rem;
+            line-height: 1.2;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        // Cek status login
+        if (localStorage.getItem("loggedIn") !== "true") {
+            window.location.href = "login.html";
+        }
+    </script>
+
+    <div class="container-fluid mt-4">
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <div class="logo-header">
+                    <img src="LOGO-f3dbfc31-d48a-4393-9ef7-5ef73b530f65tegal.png" alt="Logo">
+                    <div class="logo-text">Kearsipan Dinas Kepemudaan dan Olahraga<br>Kabupaten Tegal</div>
+                </div>
+                <div>
+                    <button class="btn btn-primary btn-sm me-2" onclick="tambahArsip()"><i class="bi bi-plus-lg"></i> Tambah</button>
+                    <button class="btn btn-danger btn-sm" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <input type="text" id="arsipInput" class="form-control" placeholder="Nama Arsip">
+                    </div>
+                    <div class="col-md-4">
+                        <input type="file" id="fileInput" class="form-control">
+                    </div>
+                </div>
+                <table class="table table-bordered table-striped table-hover arsip-table">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>No</th>
+                            <th>Nama Arsip</th>
+                            <th>Nama File</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="arsipList"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let arsipData = JSON.parse(localStorage.getItem("arsipData")) || [];
+        renderArsip();
+
+        function tambahArsip() {
+            let input = document.getElementById("arsipInput");
+            let fileInput = document.getElementById("fileInput");
+
+            if (input.value.trim() === "") {
+                alert("Nama arsip tidak boleh kosong!");
+                return;
+            }
+
+            if (fileInput.files.length === 0) {
+                alert("Silakan pilih file untuk diarsipkan!");
+                return;
+            }
+
+            let file = fileInput.files[0];
+            let id = Date.now();
+            let fileURL = URL.createObjectURL(file);
+
+            let arsip = { id, name: input.value, fileName: file.name, fileURL };
+            arsipData.push(arsip);
+            localStorage.setItem("arsipData", JSON.stringify(arsipData));
+            renderArsip();
+
+            input.value = "";
+            fileInput.value = "";
+        }
+
+        function renderArsip() {
+            let arsipList = document.getElementById("arsipList");
+            arsipList.innerHTML = "";
+            arsipData.forEach((arsip, index) => {
+                let row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${arsip.name}</td>
+                    <td>${arsip.fileName}</td>
+                    <td>
+                        <a href="${arsip.fileURL}" download="${arsip.fileName}" class="btn btn-sm btn-outline-primary me-1">
+                            <i class="bi bi-download"></i>
+                        </a>
+                        <button class="btn btn-sm btn-outline-warning me-1" onclick="editArsip(${arsip.id})">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger me-1" onclick="hapusArsip(${arsip.id})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-success" onclick="printSingleArsip(\`${arsip.name}\`, \`${arsip.fileName}\`)">
+                            <i class="bi bi-printer"></i>
+                        </button>
+                    </td>`;
+                arsipList.appendChild(row);
+            });
+        }
+
+        function editArsip(id) {
+            let arsip = arsipData.find(item => item.id === id);
+            let newName = prompt("Edit nama arsip:", arsip.name);
+            if (newName !== null && newName.trim() !== "") {
+                arsip.name = newName;
+                localStorage.setItem("arsipData", JSON.stringify(arsipData));
+                renderArsip();
+            }
+        }
+
+        function hapusArsip(id) {
+            arsipData = arsipData.filter(item => item.id !== id);
+            localStorage.setItem("arsipData", JSON.stringify(arsipData));
+            renderArsip();
+        }
+
+        function printSingleArsip(name, fileName) {
+            const printWindow = window.open('', '', 'height=400,width=600');
+            printWindow.document.write('<html><head><title>Cetak Arsip</title></head><body>');
+            printWindow.document.write(`<h3>Nama Arsip: ${name}</h3>`);
+            printWindow.document.write(`<p>Nama File: ${fileName}</p>`);
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(function() {
+                printWindow.print();
+                printWindow.close();
+            }, 500);
+        }
+
+        function logout() {
+            localStorage.removeItem("loggedIn");
+            window.location.href = "login.html";
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
